@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"encoding/json"
 	"log"
 	"time"
@@ -10,13 +11,16 @@ import (
 	"bytes"
 )
 var taskMap map[string]Task 
+var fileName string
 // read the init file for all of the tasks
 func Init(){
+	usr , err := user.Current()
+	fileName = usr.HomeDir + "/.config/goat"
 	taskMap = make(map[string]Task)// create task map
 	// open and read file
-	fileName := "./temp.txt"
 	input , err := os.Open(fileName)
 	if err != nil{
+		fmt.Printf("%v\n", err)
 		log.Fatal(err)
 	}
 
@@ -30,6 +34,9 @@ func Init(){
 				break; 
 			}
 			log.Fatal(err)
+		}
+		if a_task.Active {
+			a_task.TimeIntervals[0].End  = time.Now()
 		}
 		// add task to map
 		taskMap[a_task.Name] = a_task
@@ -99,7 +106,6 @@ func Info(taskname string) string{
 	return fmt.Sprintf("%s\n", task.String())
 }
 func WriteTasks (){
-	fileName := "./temp.txt"
 	output, err := os.Create(fileName)
 	if err != nil{
 		log.Fatal(err); 
@@ -136,9 +142,17 @@ type Task struct {
 	Notes []string; 
 }
 
+func (task *Task) totalTime() time.Duration {
+	var sum time.Duration
+	for _ , interval := range ( task.TimeIntervals){
+		sum += interval.duration()
+	}
+	return sum
+
+}
 func (task *Task) String() string{
 	var buffer bytes.Buffer
-	buffer.WriteString(fmt.Sprintf("Name: %s\nActive: %t\nDuration: %d\nNotes:\n", task.Name, task.Active, task.TimeIntervals[0].duration()))
+	buffer.WriteString(fmt.Sprintf("Name: %s\nActive: %t\nLast Run Time: %s \nNotes:\n", task.Name, task.Active, task.TimeIntervals[0].duration()))
 	for _, nt := range(task.Notes){
 		buffer.WriteString(fmt.Sprintf("\t%s\n", nt))
 	}
