@@ -67,7 +67,7 @@ func CreateTask(name string) string {
 		true,
 		name,
 		make([]TimeInterval, 0),
-		make([]string, 0),
+		make([]Note_struct, 0),
 	}
 	now := time.Now()
 	new_task.TimeIntervals = append(new_task.TimeIntervals, TimeInterval{now, now})
@@ -76,7 +76,7 @@ func CreateTask(name string) string {
 	return fmt.Sprintf("created new task: %s", name)
 
 }
-func EndTask(name string) {
+func EndTask(name string) string {
 	now := time.Now()
 
 	task, exist := taskMap[name]
@@ -84,8 +84,8 @@ func EndTask(name string) {
 		task.Active = false
 		task.TimeIntervals[0].End = now
 		taskMap[name] = task
-		fmt.Printf("removed : %s\n", name)
 	}
+	return task.ShortString()
 }
 func ListTasks() []string {
 	ret_list := make([]string, 0)
@@ -96,8 +96,9 @@ func ListTasks() []string {
 }
 func AddNote(taskname string, note string) {
 	task := taskMap[taskname]
+	note_struct := Note_struct{note, time.Now()}
 	//note_struct := Note_struct{note, time.Now()}
-	task.Notes = append(task.Notes, note)
+	task.Notes = append(task.Notes, note_struct)
 	taskMap[taskname] = task
 }
 
@@ -116,14 +117,15 @@ func WriteTasks() {
 	}
 }
 
-func CurrentTasks() []Task {
-	currentTasks := make([]Task, 0)
+func CurrentTasks() []string {
+	retList := make([]string, 0)
 	for _, v := range taskMap {
 		if v.Active {
-			currentTasks = append(currentTasks, v)
+			retList = append(retList, v.ShortString())
 		}
 	}
-	return currentTasks
+
+	return retList
 }
 
 type TimeInterval struct {
@@ -140,7 +142,7 @@ type Task struct {
 	Name          string
 	TimeIntervals []TimeInterval
 	// Start_time time / int
-	Notes []string
+	Notes []Note_struct
 }
 
 func (task *Task) totalTime() time.Duration {
@@ -154,7 +156,11 @@ func (task *Task) totalTime() time.Duration {
 func (task *Task) String() string {
 	var buffer bytes.Buffer
 	timeDifference := time.Now().Sub(task.TimeIntervals[0].End)
-	buffer.WriteString(fmt.Sprintf("    Name: %s\n  Active: %t\nLast Run: %s ago\n     for: %-8s \n\nNotes:\n", task.Name, task.Active, timeDifference, task.TimeIntervals[0].duration()))
+	timeDiffString := timeDifference.String() + " ago"
+	if timeDifference.Minutes() < 1 {
+		timeDiffString = "Now"
+	}
+	buffer.WriteString(fmt.Sprintf("    Name: %s\n  Active: %t\nLast Run: %s\n     For: %-8s \n\nNotes:\n", task.Name, task.Active, timeDiffString, task.TimeIntervals[0].duration()))
 	for i, nt := range task.Notes {
 		buffer.WriteString(fmt.Sprintf("\t%d. %s\n", i+1, nt))
 	}

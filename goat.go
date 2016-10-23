@@ -32,17 +32,19 @@ func main() {
 			Aliases: []string{"cur"},
 			Action: func(c *cli.Context) error {
 				Init()
-				fmt.Printf("%v\n", CurrentTasks())
+				fmt.Printf("%s\n", CurrentTasks())
 				return nil
 			},
 		},
 		{
-			Name:  "end",
-			Usage: "end a given task",
+			Name:    "end",
+			Usage:   "end a given task",
+			Aliases: []string{"stop"},
 			Action: func(c *cli.Context) error {
 				Init()
-				EndTask(c.Args().First())
+				retString := EndTask(c.Args().First())
 				WriteTasks()
+				fmt.Printf("Ended Task\n%s\n", retString)
 				return nil
 			},
 		},
